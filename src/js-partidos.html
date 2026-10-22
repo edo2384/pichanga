@@ -22,6 +22,39 @@ function mostrarForm(ver){
 }
 function volverDesdeForm(){ window._editando ? verVista('detalle') : verVista('lista'); }
 
+// ---------- Resultado ----------
+/** Chip con el marcador: verde si ganamos, gris si empate, negro si perdimos. */
+function chipResultado(r){
+  if (!r) return '';
+  const t = r.nosotros > r.ellos ? 'g' : r.nosotros < r.ellos ? 'p' : 'e';
+  const txt = { g: 'Ganado', e: 'Empate', p: 'Perdido' }[t];
+  return `<span class="res ${t}" title="${txt}">${r.nosotros}–${r.ellos}</span>`;
+}
+
+function pintarResultado(p){
+  $('gRival').textContent = p.rival || 'Rival';
+  $('gNos').value = p.resultado ? p.resultado.nosotros : '';
+  $('gEllos').value = p.resultado ? p.resultado.ellos : '';
+  $('gBorrar').hidden = !p.resultado;
+  $('gEstado').innerHTML = p.resultado ? chipResultado(p.resultado) : 'sin cargar';
+}
+
+async function guardarResultado(){
+  const p = window._actual, a = $('gNos').value, b = $('gEllos').value;
+  if (a === '' || b === '') return msg('Ingresa los goles de ambos equipos');
+  const r = await run('setResultado', p.id, a, b);
+  msg(`Resultado guardado: AndesFC ${r.nosotros} – ${r.ellos} ${p.rival}`);
+  await abrirPartido(p.id, true);
+}
+
+async function borrarResultado(){
+  const p = window._actual;
+  if (!confirm(`¿Borrar el resultado del partido vs ${p.rival}?`)) return;
+  await run('setResultado', p.id, '', '');
+  msg('Resultado borrado');
+  await abrirPartido(p.id, true);
+}
+
 // ---------- Lista: próximos arriba, jugados abajo ----------
 function filaPartido(p, pasado){
   const n = p.jugadores.length;
@@ -29,7 +62,7 @@ function filaPartido(p, pasado){
     <button class="fila ${pasado ? 'pasado' : ''}" onclick="abrirPartido('${p.id}')">
       <div class="fecha">${fechaBloque(p.fecha)}</div>
       <div class="cuerpo">
-        <div class="titulo">vs ${esc(p.rival || '—')}</div>
+        <div class="titulo">vs ${esc(p.rival || '—')}${chipResultado(p.resultado)}</div>
         <div class="detalle">${n ? `${n} ${n === 1 ? 'jugador' : 'jugadores'} · ${fmt(p.costo * n)}` : '<span class="aviso">Falta marcar jugadores</span>'}</div>
       </div>
       <span class="chev" aria-hidden="true">›</span>
@@ -94,6 +127,7 @@ async function abrirPartido(id, recargar){
   $('dFecha').innerHTML = fechaBloque(p.fecha);
   $('dTitulo').textContent = 'vs ' + (p.rival || '—');
   $('dInfo').textContent = `${fmt(p.costo)} por jugador`;
+  pintarResultado(p);
 
   // jugadores activos + los ya inscritos aunque hoy estén inactivos
   const inscritos = new Set(p.jugadores);

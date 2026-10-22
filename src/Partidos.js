@@ -119,10 +119,42 @@ function getPartidos() {
         orden: f ? f.getTime() : 0,
         costo: Number(r[2]) || 0,
         jugadores: String(r[3] || '').split(',').map(s => s.trim()).filter(Boolean),
-        rival: String(r[4] || '').trim()
+        rival: String(r[4] || '').trim(),
+        resultado: leerResultado_(r[6])
       };
     })
     .sort((a, b) => b.orden - a.orden || b.id.localeCompare(a.id));
+}
+
+// ---------- resultado del partido (columna G: "goles AndesFC-goles rival") ----------
+const COL_RESULTADO = 7;
+
+/**
+ * Devuelve {nosotros, ellos} o null. Acepta '5-2', '5 - 2' y también fechas:
+ * Google Sheets convierte '5-2' en el 5 de febrero si la celda no está como texto.
+ */
+function leerResultado_(v) {
+  if (v instanceof Date) return { nosotros: v.getDate(), ellos: v.getMonth() + 1 };
+  const m = String(v || '').match(/^\s*(\d{1,2})\s*[-–]\s*(\d{1,2})\s*$/);
+  return m ? { nosotros: Number(m[1]), ellos: Number(m[2]) } : null;
+}
+
+/** Guarda el resultado; con ambos goles vacíos lo borra. */
+function setResultado(id, nosotros, ellos) {
+  const vacio = v => v === '' || v === null || v === undefined;
+  const fila = filaPartido_(id);
+  if (fila < 0) throw new Error('Partido no encontrado');
+  const p = hoja_('Partidos');
+  if (!p.getRange(1, 6).getValue()) p.getRange(1, 6).setValue('Sede').setFontWeight('bold');
+  if (!p.getRange(1, COL_RESULTADO).getValue()) p.getRange(1, COL_RESULTADO).setValue('Resultado').setFontWeight('bold');
+  const celda = p.getRange(fila, COL_RESULTADO).setNumberFormat('@');   // texto: que no se convierta en fecha
+  if (vacio(nosotros) && vacio(ellos)) { celda.setValue(''); return null; }
+  if (vacio(nosotros) || vacio(ellos)) throw new Error('Ingresa los goles de ambos equipos (números de 0 a 99)');
+  const a = Number(nosotros), b = Number(ellos);
+  const ok = n => Number.isInteger(n) && n >= 0 && n <= 99;
+  if (!ok(a) || !ok(b)) throw new Error('Ingresa los goles de ambos equipos (números de 0 a 99)');
+  celda.setValue(`${a}-${b}`);
+  return { nosotros: a, ellos: b };
 }
 
 /** Elimina un partido y todos los cargos que generó (los saldos se recalculan solos). */

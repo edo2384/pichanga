@@ -54,6 +54,17 @@
         </div>
         <button class="link" onclick="editarPartido()">Editar</button>
       </div>
+      <div class="seccion"><h2>Resultado</h2><span id="gEstado"></span></div>
+      <div class="panel" style="margin-top:0">
+        <div class="goles">
+          <label><span>AndesFC</span><input id="gNos" type="number" inputmode="numeric" min="0" max="99" placeholder="–"></label>
+          <b aria-hidden="true">–</b>
+          <label><span id="gRival">Rival</span><input id="gEllos" type="number" inputmode="numeric" min="0" max="99" placeholder="–"></label>
+        </div>
+        <div style="margin-top:14px"><button class="btn" onclick="guardarResultado()">Guardar resultado</button></div>
+        <div style="text-align:center"><button class="link" id="gBorrar" onclick="borrarResultado()" hidden>Borrar resultado</button></div>
+      </div>
+
       <div class="seccion"><h2>¿Quiénes jugaron?</h2><span id="pMarcados"></span></div>
       <div class="lista" id="pLista"></div>
       <div class="barra-fija">

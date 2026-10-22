@@ -29,7 +29,8 @@ function crearMock() {
         }),
         setValue(x) { (d[r - 1] = d[r - 1] || [])[c - 1] = x; return this; },
         getValue: () => (d[r - 1] || [])[c - 1] ?? '',
-        setFontWeight() { return this; }
+        setFontWeight() { return this; },
+        setNumberFormat() { return this; }
       }),
       appendRow: r => d.push(r),
       deleteRow: i => d.splice(i - 1, 1),
@@ -60,6 +61,7 @@ function crearMock() {
   const codigo = fs.readdirSync(dir).filter(f => f.endsWith('.js')).sort()
     .map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
   vm.runInContext(codigo, ctx);
+  ctx.Date = vm.runInContext('Date', ctx);   // Date del contexto (instanceof Date dentro del código)
   return ctx;
 }
 
@@ -275,6 +277,27 @@ prueba('no borra si la fila cambió (firma distinta) o ya no existe', () => {
   const [beto2] = g.getMovimientosJugador('Beto', 100);      // con la fila actualizada sí se borra
   g.eliminarMovimiento(beto2.fila, beto2.firma);
   assert.deepStrictEqual(saldos(g), { Ana: 0, Beto: 0 });
+});
+
+prueba('guardar, leer y borrar el resultado de un partido', () => {
+  const g = crearMock();
+  const id = g.registrarPartido('2026-10-25', 3000, [], 'Halcones');
+  assert.strictEqual(g.getPartidos()[0].resultado, null);
+  assert.deepStrictEqual({ ...g.setResultado(id, '5', 2) }, { nosotros: 5, ellos: 2 });
+  assert.deepStrictEqual({ ...g.getPartidos()[0].resultado }, { nosotros: 5, ellos: 2 });
+  assert.strictEqual(g.data.Partidos[0][6], 'Resultado');           // encabezado creado
+  assert.strictEqual(g.data.Partidos[1][6], '5-2');
+  assert.throws(() => g.setResultado(id, 3, ''), /ambos equipos/);
+  assert.throws(() => g.setResultado(id, -1, 2), /ambos equipos/);
+  assert.strictEqual(g.setResultado(id, '', ''), null);
+  assert.strictEqual(g.getPartidos()[0].resultado, null);
+});
+
+prueba('un resultado que Sheets convirtió en fecha se lee bien', () => {
+  const g = crearMock();
+  const id = g.registrarPartido('2026-10-25', 3000, [], 'Borgoña');
+  g.data.Partidos[1][6] = new g.Date(2026, 1, 5);                   // "5-2" convertido al 5 de febrero
+  assert.deepStrictEqual({ ...g.getPartidos()[0].resultado }, { nosotros: 5, ellos: 2 });
 });
 
 let fallas = 0;
