@@ -129,7 +129,7 @@ async function guardarAsistentes(){
   await abrirPartido(p.id, true);
 }
 
-async function eliminarPartido(){
+async function confirmarEliminarPartido(){
   const p = window._actual;
   if (!confirm(`¿Eliminar el partido vs ${p.rival || '—'} del ${p.fecha}?\nSe borrarán sus ${p.jugadores.length} cobro(s) y los saldos se recalcularán.`)) return;
   await run('eliminarPartido', p.id);

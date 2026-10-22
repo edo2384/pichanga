@@ -144,6 +144,33 @@ prueba('el historial de un jugador viene ordenado y con el rival', () => {
   assert.strictEqual(h[1].nota, 'vs Viejo FC');
 });
 
+prueba('eliminar un jugador sin movimientos lo saca del plantel', () => {
+  const g = crearMock();
+  g.agregarJugadores('Ana\nBeto');
+  assert.strictEqual(g.eliminarJugador('Beto').movimientos, 0);
+  assert.deepStrictEqual(Array.from(g.getJugadores()), ['Ana']);
+});
+
+prueba('eliminar un jugador borra sus movimientos y lo quita de los partidos', () => {
+  const g = crearMock();
+  g.agregarJugadores('Ana\nBeto');
+  g.registrarAbono('Beto', 5000);
+  const id = g.registrarPartido('2026-10-25', 3000, [], 'Halcones');
+  g.setJugadoresPartido(id, ['Ana', 'Beto']);
+  const plantel = Object.fromEntries(g.getPlantel().map(x => [x.nombre, x.movimientos]));
+  assert.deepStrictEqual(plantel, { Ana: 1, Beto: 2 });
+  assert.strictEqual(g.eliminarJugador('Beto').movimientos, 2);
+  assert.deepStrictEqual(saldos(g), { Ana: -3000 });
+  assert.deepStrictEqual(Array.from(g.getPartidos()[0].jugadores), ['Ana']);
+  // el partido sigue funcionando: volver a guardar no recrea a Beto
+  assert.deepStrictEqual({ ...g.setJugadoresPartido(id, ['Ana']) }, { agregados: 0, quitados: 0 });
+});
+
+prueba('eliminar un jugador inexistente da error', () => {
+  const g = crearMock();
+  assert.throws(() => g.eliminarJugador('Nadie'), /no encontrado/);
+});
+
 let fallas = 0;
 for (const [nombre, fn] of pruebas) {
   try { fn(); console.log('  ✓ ' + nombre); }
