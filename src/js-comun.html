@@ -24,11 +24,30 @@ function msg(t, ms){
   clearTimeout(window._msgT); window._msgT = setTimeout(() => m.style.display = 'none', ms || 2500);
 }
 
+// cualquier error no controlado se muestra en pantalla (y en la consola) en vez de fallar en silencio
+window.addEventListener('error', e => msg('Error: ' + e.message, 8000));
+window.addEventListener('unhandledrejection', e => {
+  const r = e.reason;
+  if (r && r._mostrado) return;                       // ya se mostró desde run()
+  msg('Error: ' + (r && r.message || r), 8000);
+});
+/** Funciones que siempre deben devolver una lista: si llega null, es un error del servidor. */
+const LISTAS = ['getJugadores', 'getPlantel', 'getPartidos', 'getSaldos', 'getMovimientosJugador'];
+const CARGANDO = '<div class="vacio">Cargando…</div>';
+
 function run(fn, ...args){
   return new Promise((ok, ko) => {
-    const falla = e => { msg('Error: ' + (e && e.message || e), 6000); console.error(fn, e); ko(e); };
+    const falla = e => {
+      msg('Error: ' + (e && e.message || e), 8000); console.error(fn, e);
+      if (e && typeof e === 'object') e._mostrado = true;
+      ko(e);
+    };
     try {
-      const r = google.script.run.withSuccessHandler(ok).withFailureHandler(falla);
+      const r = google.script.run
+        .withSuccessHandler(v => v === null && LISTAS.includes(fn)
+          ? falla(new Error(`el servidor no devolvió datos en ${fn}. Revisa Apps Script → Ejecuciones.`))
+          : ok(v))
+        .withFailureHandler(falla);
       if (typeof r[fn] !== 'function') {
         throw new Error(`falta la función "${fn}" en el servidor. Revisa que el último deploy de GitHub haya terminado bien.`);
       }

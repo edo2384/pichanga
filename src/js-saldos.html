@@ -10,6 +10,7 @@ function filaSaldo(x){
 }
 
 async function cargarSaldos(){
+  if (!$('tSaldos').innerHTML) $('tSaldos').innerHTML = CARGANDO;
   const [s, r] = await Promise.all([run('getSaldos'), run('getResumen')]);
   const deben = s.filter(x => x.saldo < 0);
   const favor = s.filter(x => x.saldo > 0).sort((a, b) => b.saldo - a.saldo);

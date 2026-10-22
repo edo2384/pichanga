@@ -9,6 +9,7 @@ function mostrarFormJug(ver){
 }
 
 async function cargarPlantel(){
+  if (!window._plantel) $('jLista').innerHTML = CARGANDO;
   const p = await run('getPlantel');
   window._plantel = p;
   const activos = p.filter(x => x.activo).length;

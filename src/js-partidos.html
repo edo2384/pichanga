@@ -37,6 +37,7 @@ function filaPartido(p, pasado){
 }
 
 async function cargarPartidos(){
+  if (!window._partidos) $('pPartidos').innerHTML = CARGANDO;
   const ps = await run('getPartidos');
   window._partidos = ps;
   if (ps.length) window._ultimoCosto = ps[0].costo;      // sugiere el último costo usado
