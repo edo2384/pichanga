@@ -43,10 +43,12 @@ function getResumen() {
 
 // ---------- datos de pago (se guardan en Propiedades del script, nunca en el código) ----------
 function getDatosPago() {
+  verificarAcceso_();          // las Propiedades no dependen de la hoja: se protege a mano
   return PropertiesService.getScriptProperties().getProperty('DATOS_PAGO') || '';
 }
 
 function setDatosPago(texto) {
+  verificarAcceso_();
   texto = String(texto || '').trim();
   if (texto.length > 500) throw new Error('Los datos de pago son muy largos (máximo 500 caracteres)');
   const p = PropertiesService.getScriptProperties();

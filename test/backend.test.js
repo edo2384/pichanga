@@ -300,6 +300,19 @@ prueba('un resultado que Sheets convirtió en fecha se lee bien', () => {
   assert.deepStrictEqual({ ...g.getPartidos()[0].resultado }, { nosotros: 5, ellos: 2 });
 });
 
+prueba('sin acceso a la hoja no se pueden leer ni cambiar los datos de pago', () => {
+  const g = crearMock();
+  g.setDatosPago('Cuenta RUT 1-9');
+  g.SpreadsheetApp.getActive = () => { throw new Error('No tienes permiso para acceder al documento'); };
+  assert.throws(() => g.getDatosPago(), /No tienes acceso a la hoja de AndesFC/);
+  assert.throws(() => g.setDatosPago('otra'), /No tienes acceso/);
+});
+
+prueba('la configuración publica la app con la cuenta de quien la abre', () => {
+  const m = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'appsscript.json'), 'utf8'));
+  assert.deepStrictEqual(m.webapp, { executeAs: 'USER_ACCESSING', access: 'ANYONE' });
+});
+
 let fallas = 0;
 for (const [nombre, fn] of pruebas) {
   try { fn(); console.log('  ✓ ' + nombre); }

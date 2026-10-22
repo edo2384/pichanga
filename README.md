@@ -1,7 +1,7 @@
 # Pichanga ⚽
 
 App web para llevar los saldos de los jugadores de los partidos: quién debe y quién tiene saldo a favor.
-Usa **Google Sheets como base de datos** y **Google Apps Script** como servidor. Solo la usa el administrador.
+Usa **Google Sheets como base de datos** y **Google Apps Script** como servidor.
 
 **Ejemplo:** un jugador abona $10.000, juega un partido de $3.000 y le quedan $7.000 a favor.
 
@@ -18,7 +18,7 @@ Usa **Google Sheets como base de datos** y **Google Apps Script** como servidor.
 
 ```
 src/
-  appsscript.json     manifiesto (zona horaria, web app "solo yo")
+  appsscript.json     manifiesto (zona horaria, web app con la cuenta de quien la abre)
   Config.js           HOJAS, doGet, include, setup
   Util.js             helpers de lectura de hojas y formato
   Jugadores.js        plantel: alta, activar/desactivar, renombrar
@@ -42,6 +42,16 @@ Todos los `.js` de `src/` comparten el ámbito global de Apps Script. clasp los 
 | Movimientos | Timestamp, Fecha, Jugador, Tipo (`ABONO`/`CARGO`), Monto, PartidoID, Nota |
 
 El saldo de cada jugador se calcula siempre a partir de `Movimientos`. Si editas o borras una fila ahí, el saldo se corrige solo.
+
+## Quién puede usarla
+
+La app corre **con la cuenta de Google de quien la abre**. Solo entra quien tenga la **hoja de cálculo compartida**:
+
+- **Editor**: puede registrar partidos, abonos y jugadores.
+- **Lector**: puede mirar, pero no guardar cambios.
+- Cualquier otra cuenta ve una página de "sin acceso".
+
+Para dar acceso a alguien, abre la hoja, presiona **Compartir** y agrega su correo. La primera vez que abra la app, esa persona tiene que autorizarla.
 
 ## Despliegue automático (GitHub → Apps Script)
 
