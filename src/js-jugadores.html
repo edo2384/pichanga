@@ -1,5 +1,5 @@
 <script>
-// ---------- Jugadores ----------
+// ---------- Plantel ----------
 function mostrarFormJug(ver){
   $('jVistaForm').style.display = ver ? 'block' : 'none';
   $('jVistaLista').style.display = ver ? 'none' : 'block';
@@ -13,43 +13,42 @@ async function cargarPlantel(){
   window._plantel = p;
   const activos = p.filter(x => x.activo).length;
   $('jResumen').textContent = p.length
-    ? `${activos} activo(s)` + (p.length > activos ? ` · ${p.length - activos} inactivo(s)` : '')
-    : 'Aún no hay jugadores';
-  $('jLista').innerHTML = p.map((x, i) => `
-    <div class="item ${x.activo ? '' : 'off'}" id="jg${i}">
-      <div class="cab" onclick="abrirJugador(${i})">
-        <span class="rival">${esc(x.nombre)}${x.activo ? '' : '<span class="tag">inactivo</span>'}</span>
-        <span class="meta ${x.saldo<0?'neg':x.saldo>0?'pos':''}" style="font-weight:600;font-size:15px">${x.saldo<0?'-':''}${fmt(x.saldo)}</span>
+    ? `${activos} activos` + (p.length > activos ? ` · ${p.length - activos} inactivos` : '')
+    : '';
+  $('jLista').innerHTML = p.length ? p.map((x, i) => `
+    <button class="fila ${x.activo ? '' : 'off'}" id="jg${i}" onclick="abrirJugador(${i})" aria-expanded="false">
+      <div class="avatar">${iniciales(x.nombre)}</div>
+      <div class="cuerpo"><div class="titulo">${esc(x.nombre)}${x.activo ? '' : '<span class="tag">inactivo</span>'}</div></div>
+      <div class="valor num ${claseSaldo(x.saldo)}">${saldoTxt(x.saldo)}</div>
+    </button>
+    <div class="ficha" id="jf${i}">
+      <div class="interruptor">
+        <span>Activo<br><small class="detalle">Aparece al marcar partidos y abonos</small></span>
+        <label class="sw"><input type="checkbox" aria-label="Activo" ${x.activo ? 'checked' : ''} onchange="toggleActivo(${i}, this.checked)"><span></span></label>
       </div>
-      <div class="det">
-        <div class="fila">
-          <span>Activo <small style="color:#777">(aparece en Partido y Abono)</small></span>
-          <label class="sw"><input type="checkbox" ${x.activo ? 'checked' : ''} onchange="toggleActivo(${i}, this.checked)"><span></span></label>
-        </div>
-        <p style="margin:12px 0 4px"><strong>Últimos movimientos</strong></p>
-        <div id="jh${i}" style="font-size:13px;color:#777">Cargando…</div>
-        <button class="btn sec" onclick="renombrar(${i})">Renombrar</button>
-      </div>
-    </div>`).join('');
+      <div id="jh${i}" class="detalle">Cargando movimientos…</div>
+      <button class="link" onclick="renombrar(${i})">Cambiar nombre</button>
+    </div>`).join('')
+    : '<div class="vacio"><b>El plantel está vacío</b>Agrega a los jugadores para poder marcarlos en los partidos.</div>';
 }
 
 async function abrirJugador(i){
-  const card = $('jg' + i);
-  card.classList.toggle('abierto');
-  if (!card.classList.contains('abierto') || card.dataset.cargado) return;
+  const f = $('jf' + i), b = $('jg' + i);
+  const abierta = f.classList.toggle('abierta');
+  b.setAttribute('aria-expanded', abierta);
+  if (!abierta || f.dataset.cargado) return;
   const ms = await run('getMovimientosJugador', window._plantel[i].nombre, 15);
-  card.dataset.cargado = '1';
+  f.dataset.cargado = '1';
   $('jh' + i).innerHTML = ms.length
     ? '<table class="hist">' + ms.map(m => `
-        <tr><td>${esc(m.fecha)}</td>
-            <td>${m.tipo === 'ABONO' ? 'Abono' : 'Partido'}${m.nota ? ' · ' + esc(m.nota) : ''}</td>
-            <td class="n ${m.tipo === 'ABONO' ? 'pos' : 'neg'}">${m.tipo === 'ABONO' ? '+' : '-'}${fmt(m.monto)}</td></tr>`).join('') + '</table>'
-    : 'Sin movimientos todavía';
+        <tr><td>${esc(m.fecha)}<br><small class="detalle">${m.tipo === 'ABONO' ? 'Abono' : 'Partido'}${m.nota ? ' ' + esc(m.nota) : ''}</small></td>
+            <td class="${m.tipo === 'ABONO' ? 'favor' : 'debe'}">${m.tipo === 'ABONO' ? '+' : '−'}${fmt(m.monto)}</td></tr>`).join('') + '</table>'
+    : '<p style="margin:4px 0 8px">Sin movimientos todavía.</p>';
 }
 
 async function nuevosJugadores(){
   const r = await run('agregarJugadores', $('jNombres').value);
-  msg(`${r.agregados} agregado(s)` + (r.repetidos.length ? ` · ya existían: ${r.repetidos.join(', ')}` : ''));
+  msg(`${r.agregados} agregado(s)` + (r.repetidos.length ? ` · ya estaban: ${r.repetidos.join(', ')}` : ''));
   await refrescarActivos();
   mostrarFormJug(false);
 }

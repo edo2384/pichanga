@@ -1,8 +1,38 @@
 <script>
 // ---------- Abonos ----------
+const MONTOS_RAPIDOS = [3000, 5000, 10000, 20000];
+
+$('aChips').innerHTML = MONTOS_RAPIDOS.map(m => `<button type="button" class="chip" data-m="${m}">${fmt(m)}</button>`).join('');
+$('aChips').onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  $('aMonto').value = b.dataset.m; marcarChip();
+};
+$('aMonto').oninput = marcarChip;
+$('aJug').onchange = mostrarSaldoJugador;
+
+function marcarChip(){
+  document.querySelectorAll('#aChips .chip').forEach(c => c.classList.toggle('on', c.dataset.m === $('aMonto').value));
+}
+
+async function prepararAbono(){
+  const s = await run('getSaldos');
+  window._saldos = Object.fromEntries(s.map(x => [x.nombre, x.saldo]));
+  mostrarSaldoJugador();
+}
+function mostrarSaldoJugador(){
+  const j = $('aJug').value, s = (window._saldos || {})[j];
+  $('aSaldo').innerHTML = j && s !== undefined
+    ? (s < 0 ? `Debe <b class="debe">${fmt(s)}</b>` : s > 0 ? `Tiene <b class="favor">${fmt(s)}</b> a favor` : 'Está al día')
+    : '';
+}
+
 async function guardarAbono(){
-  await run('registrarAbono', $('aJug').value, $('aMonto').value, $('aNota').value);
-  msg(`Abono de ${fmt($('aMonto').value)} a ${$('aJug').value}`);
-  $('aMonto').value = ''; $('aNota').value = '';
+  const j = $('aJug').value, monto = $('aMonto').value;
+  if (!j) return msg('Elige un jugador');
+  if (!(monto > 0)) return msg('Ingresa el monto');
+  await run('registrarAbono', j, monto, $('aNota').value);
+  msg(`Abono de ${fmt(monto)} registrado a ${j}`);
+  $('aMonto').value = ''; $('aNota').value = ''; marcarChip();
+  prepararAbono();
 }
 </script>

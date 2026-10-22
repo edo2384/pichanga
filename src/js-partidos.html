@@ -9,7 +9,7 @@ function verVista(v){
   if (v === 'lista') cargarPartidos();
   window.scrollTo(0, 0);
 }
-function mostrarForm(ver){                      // compatibilidad: botón "+ Nuevo partido" y cambio de pestaña
+function mostrarForm(ver){
   if (!ver) return verVista('lista');
   window._editando = null;
   $('pFormTitulo').textContent = 'Nuevo partido';
@@ -18,39 +18,56 @@ function mostrarForm(ver){                      // compatibilidad: botón "+ Nue
   $('pRival').value = '';
   $('pCosto').value = window._ultimoCosto || '';
   verVista('form');
+  $('pRival').focus();
 }
 function volverDesdeForm(){ window._editando ? verVista('detalle') : verVista('lista'); }
 
-// ---------- Lista ----------
+// ---------- Lista: próximos arriba, jugados abajo ----------
+function filaPartido(p, pasado){
+  const n = p.jugadores.length;
+  return `
+    <button class="fila ${pasado ? 'pasado' : ''}" onclick="abrirPartido('${p.id}')">
+      <div class="fecha">${fechaBloque(p.fecha)}</div>
+      <div class="cuerpo">
+        <div class="titulo">vs ${esc(p.rival || '—')}</div>
+        <div class="detalle">${n ? `${n} ${n === 1 ? 'jugador' : 'jugadores'} · ${fmt(p.costo * n)}` : '<span class="aviso">Falta marcar jugadores</span>'}</div>
+      </div>
+      <span class="chev" aria-hidden="true">›</span>
+    </button>`;
+}
+
 async function cargarPartidos(){
   const ps = await run('getPartidos');
   window._partidos = ps;
   if (ps.length) window._ultimoCosto = ps[0].costo;      // sugiere el último costo usado
-  $('pResumen').textContent = ps.length ? `${ps.length} partido(s) registrados` : 'Aún no hay partidos';
-  $('pPartidos').innerHTML = ps.map(p => `
-    <div class="item">
-      <div class="cab" onclick="abrirPartido('${p.id}')">
-        <span class="fecha">${esc(p.fecha)}</span>
-        <span class="rival">vs ${esc(p.rival || '—')}</span>
-        <span class="meta">${p.jugadores.length ? p.jugadores.length + ' jug.' : '<span style="color:#c62828">sin jugadores</span>'}<br>${fmt(p.costo)} c/u</span>
-        <span style="color:#999;font-size:20px">›</span>
-      </div>
-    </div>`).join('');
+  $('pResumen').textContent = `${ps.length} partido(s) registrados`;
+
+  if (!ps.length) {
+    $('pPartidos').innerHTML = `<div class="vacio" style="margin-top:12px"><b>Aún no hay partidos</b>Crea el primero y después marca quiénes jugaron.</div>`;
+    return;
+  }
+  const hoy = hoyISO();
+  const proximos = ps.filter(p => p.fechaISO >= hoy).reverse();   // el más cercano primero
+  const jugados  = ps.filter(p => !(p.fechaISO >= hoy));
+  let html = '';
+  if (proximos.length) html += `<div class="seccion"><h2>Próximos</h2></div><div class="lista">${proximos.map(p => filaPartido(p, false)).join('')}</div>`;
+  if (jugados.length)  html += `<div class="seccion"><h2>Jugados</h2><span>${jugados.length}</span></div><div class="lista">${jugados.map(p => filaPartido(p, true)).join('')}</div>`;
+  $('pPartidos').innerHTML = html;
 }
 
 // ---------- Crear / editar datos ----------
 async function guardarFormPartido(){
   const fecha = $('pFecha').value, rival = $('pRival').value.trim(), costo = $('pCosto').value;
-  if (!fecha) return msg('Ingresa la fecha');
-  if (!rival) return msg('Ingresa el rival');
-  if (!(costo > 0)) return msg('Ingresa el costo');
+  if (!rival) return msg('Escribe el nombre del rival');
+  if (!fecha) return msg('Elige la fecha');
+  if (!(costo > 0)) return msg('Ingresa el costo por jugador');
   if (window._editando) {
     await run('actualizarPartido', window._editando, fecha, rival, costo);
     msg('Partido actualizado');
     await abrirPartido(window._editando, true);
   } else {
     const id = await run('registrarPartido', fecha, costo, [], rival);
-    msg(`Partido vs ${rival} creado. Ahora asigna los jugadores.`);
+    msg('Partido creado. Marca quiénes jugaron.');
     await abrirPartido(id, true);
   }
 }
@@ -65,30 +82,41 @@ function editarPartido(){
   verVista('form');
 }
 
-// ---------- Detalle + asignar jugadores ----------
+// ---------- Detalle + marcar jugadores ----------
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
 async function abrirPartido(id, recargar){
   if (recargar || !window._partidos) window._partidos = await run('getPartidos');
   const p = window._partidos.find(x => x.id === id);
-  if (!p) { msg('Partido no encontrado'); return verVista('lista'); }
+  if (!p) { msg('No se encontró el partido'); return verVista('lista'); }
   window._actual = p;
   window._editando = null;
+  $('dFecha').innerHTML = fechaBloque(p.fecha);
   $('dTitulo').textContent = 'vs ' + (p.rival || '—');
-  $('dInfo').innerHTML = `${esc(p.fecha)} · ${fmt(p.costo)} por jugador`;
+  $('dInfo').textContent = `${fmt(p.costo)} por jugador`;
 
   // jugadores activos + los ya inscritos aunque hoy estén inactivos
   const inscritos = new Set(p.jugadores);
   const todos = [...new Set([...(window._activos || []), ...p.jugadores])].sort((a, b) => a.localeCompare(b, 'es'));
   $('pLista').innerHTML = todos.length
-    ? todos.map(j => `<label><input type="checkbox" value="${esc(j)}" ${inscritos.has(j) ? 'checked' : ''}>${esc(j)}</label>`).join('')
-    : '<label style="color:#999">No hay jugadores. Agrégalos en la pestaña Jugadores.</label>';
+    ? todos.map(j => `
+        <label class="check ${inscritos.has(j) ? 'inscrito' : ''}">
+          <input type="checkbox" value="${esc(j)}" ${inscritos.has(j) ? 'checked' : ''}>
+          <span class="caja">${CHECK}</span>${esc(j)}
+        </label>`).join('')
+    : '<div class="vacio"><b>No hay jugadores en el plantel</b>Agrégalos en la pestaña Plantel.</div>';
   $('pLista').onchange = contar; contar();
   verVista('detalle');
 }
 
 function contar(){
-  const n = document.querySelectorAll('#pLista input:checked').length;
+  const marcados = document.querySelectorAll('#pLista input:checked');
+  const n = marcados.length;
+  document.querySelectorAll('#pLista .check').forEach(l => l.classList.toggle('inscrito', l.querySelector('input').checked));
   $('pCount').textContent = n;
+  $('pCountTxt').textContent = n === 1 ? ' jugador' : ' jugadores';
   $('pTotal').textContent = fmt(n * ((window._actual && window._actual.costo) || 0));
+  $('pMarcados').textContent = `${n} de ${document.querySelectorAll('#pLista input').length}`;
 }
 
 async function guardarAsistentes(){
@@ -103,7 +131,7 @@ async function guardarAsistentes(){
 
 async function eliminarPartido(){
   const p = window._actual;
-  if (!confirm(`¿Eliminar el partido vs ${p.rival || '—'} del ${p.fecha}?\nSe borrarán sus ${p.jugadores.length} cargo(s) y los saldos se recalcularán.`)) return;
+  if (!confirm(`¿Eliminar el partido vs ${p.rival || '—'} del ${p.fecha}?\nSe borrarán sus ${p.jugadores.length} cobro(s) y los saldos se recalcularán.`)) return;
   await run('eliminarPartido', p.id);
   msg('Partido eliminado');
   verVista('lista');

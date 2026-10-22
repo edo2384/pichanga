@@ -1,8 +1,23 @@
 <script>
-// ---------- utilidades y navegación ----------
+// ---------- utilidades ----------
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = n => '$' + String(Math.abs(Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+/** Saldo con signo y clase de color: deuda en rojo, a favor en verde. */
+const claseSaldo = n => n < 0 ? 'debe' : n > 0 ? 'favor' : 'cero';
+const saldoTxt = n => (n < 0 ? '−' : '') + fmt(n);
+
+/** 'dd-MM-yyyy' → bloque de fecha estilo fixture: día grande, mes chico. */
+function fechaBloque(f){
+  const [d, m] = String(f).split('-');
+  return `<b>${esc(Number(d) || '–')}</b><small>${MESES[Number(m) - 1] || ''}</small>`;
+}
+function iniciales(nombre){
+  const p = String(nombre).trim().split(/\s+/);
+  return esc(((p[0] || '')[0] || '') + ((p[1] || '')[0] || '')).toUpperCase();
+}
 
 function msg(t, ms){
   const m = $('msg'); m.textContent = t; m.style.display = 'block';
@@ -22,10 +37,16 @@ function run(fn, ...args){
   });
 }
 
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('nav button, section').forEach(e => e.classList.remove('on'));
+// ---------- navegación inferior ----------
+const SUBTITULOS = { partido: 'Partidos', abono: 'Abonos', saldos: 'Saldos', jugadores: 'Plantel' };
+
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav.tabs button, main section').forEach(e => e.classList.remove('on'));
   b.classList.add('on'); $(b.dataset.t).classList.add('on');
-  if (b.dataset.t === 'partido') { mostrarForm(false); }
+  $('subtitulo').textContent = SUBTITULOS[b.dataset.t];
+  window.scrollTo(0, 0);
+  if (b.dataset.t === 'partido') mostrarForm(false);
+  if (b.dataset.t === 'abono') prepararAbono();
   if (b.dataset.t === 'saldos') cargarSaldos();
   if (b.dataset.t === 'jugadores') mostrarFormJug(false);
 });
@@ -34,6 +55,5 @@ function pintarJugadores(js){
   window._activos = js;
   $('aJug').innerHTML = js.map(j => `<option value="${esc(j)}">${esc(j)}</option>`).join('');
 }
-
 async function refrescarActivos(){ pintarJugadores(await run('getJugadores')); }
 </script>
