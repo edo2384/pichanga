@@ -223,14 +223,14 @@ prueba('el JavaScript del navegador es sintácticamente válido', () => {
   }
 });
 
-prueba('resumen de WhatsApp sin emojis y con datos de pago al final', () => {
+prueba('resumen de WhatsApp con 🔴 / ✅ y datos de pago al final', () => {
   const g = crearMock();
   g.agregarJugadores('Ana\nBeto\nCarla');
   g.registrarAbono('Beto', 6000);
   g.registrarPartido('2026-10-25', 3000, ['Ana', 'Beto'], 'Halcones');
   let r = g.getResumen();
-  assert.doesNotMatch(r, /\p{Extended_Pictographic}/u);
-  assert.match(r, /^\*AndesFC - Saldos al \d{2}-\d{2}-\d{4}\*\n\n\*Deben\*\n• Ana: \$3\.000\n\n\*A favor\*\n• Beto: \$3\.000$/);
+  assert.deepStrictEqual([...r.matchAll(/\p{Extended_Pictographic}/gu)].map(m => m[0]), ['\u{1F534}', '\u2705']);
+  assert.match(r, /^\*AndesFC - Saldos al \d{2}-\d{2}-\d{4}\*\n\n\u{1F534} \*Deben\*\n• Ana: \$3\.000\n\n\u2705 \*A favor\*\n• Beto: \$3\.000$/u);
   assert.strictEqual(g.setDatosPago('  Por favor ponerse al día\nCuenta RUT 1-9  '), 'Por favor ponerse al día\nCuenta RUT 1-9');
   r = g.getResumen();
   assert.ok(r.endsWith('\n\nPor favor ponerse al día\nCuenta RUT 1-9'));

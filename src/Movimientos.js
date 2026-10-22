@@ -21,8 +21,8 @@ function getSaldos() {
 }
 
 /**
- * Texto para WhatsApp. Sin emojis (algunos se rompen al pasar por el enlace de WhatsApp);
- * WhatsApp muestra en negrita lo que va entre asteriscos.
+ * Texto para WhatsApp. WhatsApp muestra en negrita lo que va entre asteriscos.
+ * Los emojis van como escapes Unicode para que ningún paso (git, clasp, editor) los altere.
  * Al final agrega los datos de pago guardados en la configuración (no en el código).
  */
 function getResumen() {
@@ -33,8 +33,9 @@ function getResumen() {
 
   const linea = x => `• ${x.nombre}: ${miles_(x.saldo)}`;
   const partes = [`*AndesFC - Saldos al ${hoy}*`];
-  partes.push(deben.length ? '*Deben*\n' + deben.map(linea).join('\n') : 'Nadie debe. ¡Todos al día!');
-  if (favor.length) partes.push('*A favor*\n' + favor.map(linea).join('\n'));
+  const ROJO = '\u{1F534}', CHECK = '\u2705';
+  partes.push(deben.length ? `${ROJO} *Deben*\n` + deben.map(linea).join('\n') : `${CHECK} Nadie debe. ¡Todos al día!`);
+  if (favor.length) partes.push(`${CHECK} *A favor*\n` + favor.map(linea).join('\n'));
   const pago = getDatosPago();
   if (pago && deben.length) partes.push(pago);
   return partes.join('\n\n');

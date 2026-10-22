@@ -1,5 +1,7 @@
 <script>
 // ---------- Saldos ----------
+const ICONO_DEBE  = '<span class="ico ico-debe" aria-hidden="true"></span>';
+const ICONO_FAVOR = '<span class="ico ico-favor" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4L18 8"/></svg></span>';
 function filaSaldo(x){
   return `
     <div class="fila">
@@ -23,10 +25,10 @@ async function cargarSaldos(){
   $('sFavor').textContent = fmt(suma(favor));
   $('sFavorN').textContent = favor.length ? `a favor de ${favor.length}` : 'sin saldos a favor';
 
-  const bloque = (titulo, l) => l.length
-    ? `<div class="seccion"><h2>${titulo}</h2><span>${l.length}</span></div><div class="lista">${l.map(filaSaldo).join('')}</div>` : '';
+  const bloque = (titulo, icono, l) => l.length
+    ? `<div class="seccion"><h2>${icono}${titulo}</h2><span>${l.length}</span></div><div class="lista">${l.map(filaSaldo).join('')}</div>` : '';
   $('tSaldos').innerHTML = s.length
-    ? bloque('Deben', deben) + bloque('A favor', favor) + bloque('Al día', alDia)
+    ? bloque('Deben', ICONO_DEBE, deben) + bloque('A favor', ICONO_FAVOR, favor) + bloque('Al día', '', alDia)
     : '<div class="vacio" style="margin-top:12px"><b>Sin movimientos todavía</b>Registra un partido o un abono para ver los saldos.</div>';
   $('resumen').value = r;
 }
@@ -43,7 +45,8 @@ async function guardarDatosPago(){
   cargarSaldos();
 }
 
-function whatsapp(){ window.open('https://wa.me/?text=' + encodeURIComponent($('resumen').value), '_blank'); }
+// api.whatsapp.com/send en vez de wa.me: wa.me redirige y en esa redirección se rompen los emojis.
+function whatsapp(){ window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent($('resumen').value), '_blank'); }
 function copiar(){
   const t = $('resumen');
   (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject())
