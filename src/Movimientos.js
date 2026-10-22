@@ -20,6 +20,11 @@ function getSaldos() {
     .sort((a, b) => a.saldo - b.saldo);
 }
 
+/**
+ * Texto para WhatsApp. Sin emojis (algunos se rompen al pasar por el enlace de WhatsApp);
+ * WhatsApp muestra en negrita lo que va entre asteriscos.
+ * Al final agrega los datos de pago guardados en la configuración (no en el código).
+ */
 function getResumen() {
   const saldos = getSaldos();
   const deben = saldos.filter(x => x.saldo < 0);                                   // más deuda primero
@@ -27,10 +32,25 @@ function getResumen() {
   const hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
 
   const linea = x => `• ${x.nombre}: ${miles_(x.saldo)}`;
-  let t = `⚽ *Saldos al ${hoy}*\n\n`;
-  t += '🔴 *Deben*\n' + (deben.length ? deben.map(linea).join('\n') : '• Nadie 🎉') + '\n\n';
-  t += '🟢 *A favor*\n' + (favor.length ? favor.map(linea).join('\n') : '• Nadie');
-  return t;
+  const partes = [`*AndesFC - Saldos al ${hoy}*`];
+  partes.push(deben.length ? '*Deben*\n' + deben.map(linea).join('\n') : 'Nadie debe. ¡Todos al día!');
+  if (favor.length) partes.push('*A favor*\n' + favor.map(linea).join('\n'));
+  const pago = getDatosPago();
+  if (pago && deben.length) partes.push(pago);
+  return partes.join('\n\n');
+}
+
+// ---------- datos de pago (se guardan en Propiedades del script, nunca en el código) ----------
+function getDatosPago() {
+  return PropertiesService.getScriptProperties().getProperty('DATOS_PAGO') || '';
+}
+
+function setDatosPago(texto) {
+  texto = String(texto || '').trim();
+  if (texto.length > 500) throw new Error('Los datos de pago son muy largos (máximo 500 caracteres)');
+  const p = PropertiesService.getScriptProperties();
+  if (texto) p.setProperty('DATOS_PAGO', texto); else p.deleteProperty('DATOS_PAGO');
+  return texto;
 }
 
 /** Últimos movimientos de un jugador, más recientes primero. */

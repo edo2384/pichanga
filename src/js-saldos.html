@@ -11,7 +11,8 @@ function filaSaldo(x){
 
 async function cargarSaldos(){
   if (!$('tSaldos').innerHTML) $('tSaldos').innerHTML = CARGANDO;
-  const [s, r] = await Promise.all([run('getSaldos'), run('getResumen')]);
+  const [s, r, pago] = await Promise.all([run('getSaldos'), run('getResumen'), run('getDatosPago')]);
+  pintarDatosPago(pago);
   const deben = s.filter(x => x.saldo < 0);
   const favor = s.filter(x => x.saldo > 0).sort((a, b) => b.saldo - a.saldo);
   const alDia = s.filter(x => x.saldo === 0);
@@ -28,6 +29,18 @@ async function cargarSaldos(){
     ? bloque('Deben', deben) + bloque('A favor', favor) + bloque('Al día', alDia)
     : '<div class="vacio" style="margin-top:12px"><b>Sin movimientos todavía</b>Registra un partido o un abono para ver los saldos.</div>';
   $('resumen').value = r;
+}
+
+function pintarDatosPago(pago){
+  if (document.activeElement !== $('pagoTexto')) $('pagoTexto').value = pago || '';
+  $('pagoEstado').textContent = pago ? '' : '· sin configurar';
+}
+
+async function guardarDatosPago(){
+  const pago = await run('setDatosPago', $('pagoTexto').value);
+  msg(pago ? 'Datos de pago guardados' : 'Datos de pago borrados');
+  $('pagoBox').open = false;
+  cargarSaldos();
 }
 
 function whatsapp(){ window.open('https://wa.me/?text=' + encodeURIComponent($('resumen').value), '_blank'); }

@@ -51,7 +51,9 @@ function crearMock() {
         return `${D}-${M}-${Y}`;
       }
     },
-    HtmlService: {}
+    HtmlService: {},
+    PropertiesService: (() => { const props = {}; return { getScriptProperties: () => ({
+      getProperty: k => props[k] ?? null, setProperty: (k, v) => { props[k] = String(v); }, deleteProperty: k => { delete props[k]; } }) }; })()
   };
   vm.createContext(ctx);
   const dir = path.join(__dirname, '..', 'src');
@@ -219,6 +221,23 @@ prueba('el JavaScript del navegador es sintácticamente válido', () => {
       catch (e) { throw new Error(`${f}: ${e.message}`); }
     }
   }
+});
+
+prueba('resumen de WhatsApp sin emojis y con datos de pago al final', () => {
+  const g = crearMock();
+  g.agregarJugadores('Ana\nBeto\nCarla');
+  g.registrarAbono('Beto', 6000);
+  g.registrarPartido('2026-10-25', 3000, ['Ana', 'Beto'], 'Halcones');
+  let r = g.getResumen();
+  assert.doesNotMatch(r, /\p{Extended_Pictographic}/u);
+  assert.match(r, /^\*AndesFC - Saldos al \d{2}-\d{2}-\d{4}\*\n\n\*Deben\*\n• Ana: \$3\.000\n\n\*A favor\*\n• Beto: \$3\.000$/);
+  assert.strictEqual(g.setDatosPago('  Por favor ponerse al día\nCuenta RUT 1-9  '), 'Por favor ponerse al día\nCuenta RUT 1-9');
+  r = g.getResumen();
+  assert.ok(r.endsWith('\n\nPor favor ponerse al día\nCuenta RUT 1-9'));
+  g.registrarAbono('Ana', 3000);                       // nadie debe: no se piden datos de pago
+  assert.doesNotMatch(g.getResumen(), /Cuenta RUT/);
+  g.setDatosPago('');
+  assert.strictEqual(g.getDatosPago(), '');
 });
 
 let fallas = 0;
