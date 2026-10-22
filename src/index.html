@@ -81,15 +81,18 @@
 
   <!-- ================= SALDOS ================= -->
   <section id="saldos">
+    <div class="acciones-saldo">
+      <button class="mini wsp" onclick="whatsapp()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.2A8.5 8.5 0 1 1 20 11.5z"/></svg>
+        Enviar por WhatsApp
+      </button>
+      <button class="mini" onclick="copiar()">Copiar</button>
+    </div>
     <div class="totales">
       <div class="total debe"><b id="sDebe" class="num debe">$0</b><span id="sDebeN">por cobrar</span></div>
       <div class="total favor"><b id="sFavor" class="num favor">$0</b><span id="sFavorN">a favor</span></div>
     </div>
     <div id="tSaldos"></div>
-    <div style="margin-top:16px;display:grid;gap:10px">
-      <button class="btn wsp" onclick="whatsapp()">Enviar resumen por WhatsApp</button>
-      <button class="btn claro" onclick="copiar()">Copiar resumen</button>
-    </div>
     <details class="texto">
       <summary>Ver el texto que se envía</summary>
       <textarea id="resumen" rows="12" readonly></textarea>
