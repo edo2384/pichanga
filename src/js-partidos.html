@@ -16,7 +16,7 @@ function mostrarForm(ver){
   $('pFormBtn').textContent = 'Crear partido';
   $('pFecha').value = hoyISO();
   $('pRival').value = '';
-  $('pCosto').value = window._ultimoCosto || '';
+  $('pCosto').value = '';
   verVista('form');
   $('pRival').focus();
 }
@@ -40,7 +40,6 @@ async function cargarPartidos(){
   if (!window._partidos) $('pPartidos').innerHTML = CARGANDO;
   const ps = await run('getPartidos');
   window._partidos = ps;
-  if (ps.length) window._ultimoCosto = ps[0].costo;      // sugiere el último costo usado
   $('pResumen').textContent = `${ps.length} partido(s) registrados`;
 
   if (!ps.length) {
