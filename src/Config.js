@@ -13,10 +13,15 @@ const HOJAS = {
   Movimientos: ['Timestamp', 'Fecha', 'Jugador', 'Tipo', 'Monto', 'PartidoID', 'Nota']
 };
 
+/** Ícono de la pestaña y del acceso directo: el escudo publicado en el repositorio de GitHub. */
+const URL_ESCUDO = 'https://raw.githubusercontent.com/edo2384/pichanga/main/assets/escudo-192.png';
+
 function doGet() {
-  return HtmlService.createTemplateFromFile('index').evaluate()
-    .setTitle('Pichanga')
+  const out = HtmlService.createTemplateFromFile('index').evaluate()
+    .setTitle('AndesFC')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  try { out.setFaviconUrl(URL_ESCUDO); } catch (e) { /* si la URL no está disponible, la app funciona igual */ }
+  return out;
 }
 
 /** Inserta el contenido de otro archivo HTML del proyecto: <?!= include('estilos') ?> */
