@@ -55,6 +55,23 @@ async function borrarResultado(){
   await abrirPartido(p.id, true);
 }
 
+/** Ganados / empatados / perdidos y goles, solo de los partidos con resultado cargado. */
+function pintarRecord(ps){
+  const con = ps.filter(p => p.resultado);
+  if (!con.length) { $('pRecord').innerHTML = ''; return; }
+  const n = t => con.filter(p => t(p.resultado.nosotros - p.resultado.ellos)).length;
+  const g = n(d => d > 0), e = n(d => d === 0), pe = n(d => d < 0);
+  const gf = con.reduce((t, p) => t + p.resultado.nosotros, 0);
+  const gc = con.reduce((t, p) => t + p.resultado.ellos, 0);
+  $('pRecord').innerHTML = `
+    <div class="record">
+      <div class="g"><b>${g}</b><span>${g === 1 ? 'Ganado' : 'Ganados'}</span></div>
+      <div class="e"><b>${e}</b><span>${e === 1 ? 'Empate' : 'Empates'}</span></div>
+      <div class="p"><b>${pe}</b><span>${pe === 1 ? 'Perdido' : 'Perdidos'}</span></div>
+    </div>
+    <p class="record-pie">${con.length} ${con.length === 1 ? 'partido' : 'partidos'} con resultado · goles ${gf} a favor, ${gc} en contra</p>`;
+}
+
 // ---------- Lista: próximos arriba, jugados abajo ----------
 function filaPartido(p, pasado){
   const n = p.jugadores.length;
@@ -74,6 +91,7 @@ async function cargarPartidos(){
   const ps = await run('getPartidos');
   window._partidos = ps;
   $('pResumen').textContent = `${ps.length} partido(s) registrados`;
+  pintarRecord(ps);
 
   if (!ps.length) {
     $('pPartidos').innerHTML = `<div class="vacio" style="margin-top:12px"><b>Aún no hay partidos</b>Crea el primero y después marca quiénes jugaron.</div>`;
