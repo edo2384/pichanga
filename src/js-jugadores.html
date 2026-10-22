@@ -19,8 +19,11 @@ async function cargarPlantel(){
   $('jLista').innerHTML = p.length ? p.map((x, i) => `
     <button class="fila ${x.activo ? '' : 'off'}" id="jg${i}" onclick="abrirJugador(${i})" aria-expanded="false">
       <div class="avatar">${iniciales(x.nombre)}</div>
-      <div class="cuerpo"><div class="titulo">${esc(x.nombre)}${x.activo ? '' : '<span class="tag">inactivo</span>'}</div></div>
-      <div class="valor num ${claseSaldo(x.saldo)}">${saldoTxt(x.saldo)}</div>
+      <div class="cuerpo">
+        <div class="titulo">${esc(x.nombre)}${x.activo ? '' : '<span class="tag">inactivo</span>'}</div>
+        <div class="detalle">${x.telefono ? esc(x.telefono) : 'Sin teléfono'}</div>
+      </div>
+      <span class="chev" aria-hidden="true">›</span>
     </button>
     <div class="ficha" id="jf${i}">
       <div class="interruptor">
@@ -33,6 +36,10 @@ async function cargarPlantel(){
           ${x.telefono ? `<button class="link" onclick="escribirWsp(${i})">WhatsApp</button>` : ''}
           <button class="link" onclick="editarTelefono(${i})">${x.telefono ? 'Cambiar' : 'Agregar'}</button>
         </span>
+      </div>
+      <div class="interruptor" style="border-top:1px solid var(--linea)">
+        <span>Saldo</span>
+        <b class="num ${claseSaldo(x.saldo)}" style="font-size:20px">${x.saldo ? saldoTxt(x.saldo) + (x.saldo < 0 ? ' por cobrar' : ' a favor') : 'Al día'}</b>
       </div>
       <div id="jh${i}" class="detalle">Cargando movimientos…</div>
       <div style="display:flex;justify-content:space-between">
