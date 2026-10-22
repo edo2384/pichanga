@@ -1,0 +1,111 @@
+<script>
+// ---------- Partidos: navegación entre vistas ----------
+function hoyISO(){ const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+
+function verVista(v){
+  $('pVistaLista').style.display   = v === 'lista'   ? 'block' : 'none';
+  $('pVistaForm').style.display    = v === 'form'    ? 'block' : 'none';
+  $('pVistaDetalle').style.display = v === 'detalle' ? 'block' : 'none';
+  if (v === 'lista') cargarPartidos();
+  window.scrollTo(0, 0);
+}
+function mostrarForm(ver){                      // compatibilidad: botón "+ Nuevo partido" y cambio de pestaña
+  if (!ver) return verVista('lista');
+  window._editando = null;
+  $('pFormTitulo').textContent = 'Nuevo partido';
+  $('pFormBtn').textContent = 'Crear partido';
+  $('pFecha').value = hoyISO();
+  $('pRival').value = '';
+  $('pCosto').value = window._ultimoCosto || '';
+  verVista('form');
+}
+function volverDesdeForm(){ window._editando ? verVista('detalle') : verVista('lista'); }
+
+// ---------- Lista ----------
+async function cargarPartidos(){
+  const ps = await run('getPartidos');
+  window._partidos = ps;
+  if (ps.length) window._ultimoCosto = ps[0].costo;      // sugiere el último costo usado
+  $('pResumen').textContent = ps.length ? `${ps.length} partido(s) registrados` : 'Aún no hay partidos';
+  $('pPartidos').innerHTML = ps.map(p => `
+    <div class="item">
+      <div class="cab" onclick="abrirPartido('${p.id}')">
+        <span class="fecha">${esc(p.fecha)}</span>
+        <span class="rival">vs ${esc(p.rival || '—')}</span>
+        <span class="meta">${p.jugadores.length ? p.jugadores.length + ' jug.' : '<span style="color:#c62828">sin jugadores</span>'}<br>${fmt(p.costo)} c/u</span>
+        <span style="color:#999;font-size:20px">›</span>
+      </div>
+    </div>`).join('');
+}
+
+// ---------- Crear / editar datos ----------
+async function guardarFormPartido(){
+  const fecha = $('pFecha').value, rival = $('pRival').value.trim(), costo = $('pCosto').value;
+  if (!fecha) return msg('Ingresa la fecha');
+  if (!rival) return msg('Ingresa el rival');
+  if (!(costo > 0)) return msg('Ingresa el costo');
+  if (window._editando) {
+    await run('actualizarPartido', window._editando, fecha, rival, costo);
+    msg('Partido actualizado');
+    await abrirPartido(window._editando, true);
+  } else {
+    const id = await run('registrarPartido', fecha, costo, [], rival);
+    msg(`Partido vs ${rival} creado. Ahora asigna los jugadores.`);
+    await abrirPartido(id, true);
+  }
+}
+function editarPartido(){
+  const p = window._actual;
+  window._editando = p.id;
+  $('pFormTitulo').textContent = 'Editar partido';
+  $('pFormBtn').textContent = 'Guardar cambios';
+  $('pFecha').value = p.fechaISO || hoyISO();
+  $('pRival').value = p.rival;
+  $('pCosto').value = p.costo;
+  verVista('form');
+}
+
+// ---------- Detalle + asignar jugadores ----------
+async function abrirPartido(id, recargar){
+  if (recargar || !window._partidos) window._partidos = await run('getPartidos');
+  const p = window._partidos.find(x => x.id === id);
+  if (!p) { msg('Partido no encontrado'); return verVista('lista'); }
+  window._actual = p;
+  window._editando = null;
+  $('dTitulo').textContent = 'vs ' + (p.rival || '—');
+  $('dInfo').innerHTML = `${esc(p.fecha)} · ${fmt(p.costo)} por jugador`;
+
+  // jugadores activos + los ya inscritos aunque hoy estén inactivos
+  const inscritos = new Set(p.jugadores);
+  const todos = [...new Set([...(window._activos || []), ...p.jugadores])].sort((a, b) => a.localeCompare(b, 'es'));
+  $('pLista').innerHTML = todos.length
+    ? todos.map(j => `<label><input type="checkbox" value="${esc(j)}" ${inscritos.has(j) ? 'checked' : ''}>${esc(j)}</label>`).join('')
+    : '<label style="color:#999">No hay jugadores. Agrégalos en la pestaña Jugadores.</label>';
+  $('pLista').onchange = contar; contar();
+  verVista('detalle');
+}
+
+function contar(){
+  const n = document.querySelectorAll('#pLista input:checked').length;
+  $('pCount').textContent = n;
+  $('pTotal').textContent = fmt(n * ((window._actual && window._actual.costo) || 0));
+}
+
+async function guardarAsistentes(){
+  const p = window._actual;
+  const js = [...document.querySelectorAll('#pLista input:checked')].map(i => i.value);
+  const r = await run('setJugadoresPartido', p.id, js);
+  msg(r.agregados || r.quitados
+    ? `Guardado: ${r.agregados} agregado(s), ${r.quitados} quitado(s)`
+    : 'Sin cambios');
+  await abrirPartido(p.id, true);
+}
+
+async function eliminarPartido(){
+  const p = window._actual;
+  if (!confirm(`¿Eliminar el partido vs ${p.rival || '—'} del ${p.fecha}?\nSe borrarán sus ${p.jugadores.length} cargo(s) y los saldos se recalcularán.`)) return;
+  await run('eliminarPartido', p.id);
+  msg('Partido eliminado');
+  verVista('lista');
+}
+</script>

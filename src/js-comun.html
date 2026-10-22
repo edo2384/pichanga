@@ -1,0 +1,39 @@
+<script>
+// ---------- utilidades y navegación ----------
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => '$' + String(Math.abs(Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+function msg(t, ms){
+  const m = $('msg'); m.textContent = t; m.style.display = 'block';
+  clearTimeout(window._msgT); window._msgT = setTimeout(() => m.style.display = 'none', ms || 2500);
+}
+
+function run(fn, ...args){
+  return new Promise((ok, ko) => {
+    const falla = e => { msg('Error: ' + (e && e.message || e), 6000); console.error(fn, e); ko(e); };
+    try {
+      const r = google.script.run.withSuccessHandler(ok).withFailureHandler(falla);
+      if (typeof r[fn] !== 'function') {
+        throw new Error(`falta la función "${fn}" en el servidor. Revisa que el último deploy de GitHub haya terminado bien.`);
+      }
+      r[fn](...args);
+    } catch (e) { falla(e); }
+  });
+}
+
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button, section').forEach(e => e.classList.remove('on'));
+  b.classList.add('on'); $(b.dataset.t).classList.add('on');
+  if (b.dataset.t === 'partido') { mostrarForm(false); }
+  if (b.dataset.t === 'saldos') cargarSaldos();
+  if (b.dataset.t === 'jugadores') mostrarFormJug(false);
+});
+
+function pintarJugadores(js){
+  window._activos = js;
+  $('aJug').innerHTML = js.map(j => `<option value="${esc(j)}">${esc(j)}</option>`).join('');
+}
+
+async function refrescarActivos(){ pintarJugadores(await run('getJugadores')); }
+</script>

@@ -1,0 +1,8 @@
+<script>
+// ---------- Abonos ----------
+async function guardarAbono(){
+  await run('registrarAbono', $('aJug').value, $('aMonto').value, $('aNota').value);
+  msg(`Abono de ${fmt($('aMonto').value)} a ${$('aJug').value}`);
+  $('aMonto').value = ''; $('aNota').value = '';
+}
+</script>

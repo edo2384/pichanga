@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<?!= include('estilos') ?>
+</head>
+<body>
+<nav>
+  <button data-t="partido" class="on">Partido</button>
+  <button data-t="abono">Abono</button>
+  <button data-t="saldos">Saldos</button>
+  <button data-t="jugadores">Jugadores</button>
+</nav>
+
+<section id="partido" class="on">
+  <!-- Vista: lista de partidos -->
+  <div id="pVistaLista">
+    <button class="btn" style="margin-top:0" onclick="mostrarForm(true)">+ Nuevo partido</button>
+    <p class="sub" id="pResumen">Partidos</p>
+    <div id="pPartidos"></div>
+  </div>
+
+  <!-- Vista: crear / editar datos del partido -->
+  <div id="pVistaForm" style="display:none">
+    <div class="form-head">
+      <button class="back" onclick="volverDesdeForm()">← Volver</button>
+      <strong id="pFormTitulo">Nuevo partido</strong>
+    </div>
+    <label class="t">Fecha</label><input type="date" id="pFecha">
+    <label class="t">Rival</label><input id="pRival" placeholder="Nombre del equipo rival">
+    <label class="t">Costo por jugador</label><input type="number" id="pCosto" inputmode="numeric">
+    <button class="btn" id="pFormBtn" onclick="guardarFormPartido()">Crear partido</button>
+    <button class="btn sec" onclick="volverDesdeForm()">Cancelar</button>
+  </div>
+
+  <!-- Vista: detalle del partido + asignar jugadores -->
+  <div id="pVistaDetalle" style="display:none">
+    <div class="form-head">
+      <button class="back" onclick="verVista('lista')">← Partidos</button>
+      <strong id="dTitulo"></strong>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="fila" style="margin:0">
+        <span id="dInfo"></span>
+        <button class="back" onclick="editarPartido()">Editar</button>
+      </div>
+    </div>
+    <p class="sub">Jugadores inscritos: <strong id="pCount">0</strong> · Total: <strong id="pTotal">$0</strong></p>
+    <div class="lista" id="pLista"></div>
+    <button class="btn" onclick="guardarAsistentes()">Guardar jugadores</button>
+    <button class="btn del" onclick="eliminarPartido()">Eliminar partido</button>
+  </div>
+</section>
+
+<section id="abono">
+  <label class="t">Jugador</label><select id="aJug"></select>
+  <label class="t">Monto</label><input type="number" id="aMonto" inputmode="numeric">
+  <label class="t">Nota (opcional)</label><input id="aNota" placeholder="Transferencia, efectivo...">
+  <button class="btn" onclick="guardarAbono()">Registrar abono</button>
+</section>
+
+<section id="saldos">
+  <table id="tSaldos"></table>
+  <label class="t">Resumen</label>
+  <textarea id="resumen" rows="12" readonly></textarea>
+  <button class="btn" onclick="whatsapp()">Enviar por WhatsApp</button>
+  <button class="btn sec" onclick="copiar()">Copiar</button>
+</section>
+
+<section id="jugadores">
+  <!-- Vista: lista de jugadores -->
+  <div id="jVistaLista">
+    <button class="btn" style="margin-top:0" onclick="mostrarFormJug(true)">+ Nuevo jugador</button>
+    <p class="sub" id="jResumen">Plantel</p>
+    <div id="jLista"></div>
+  </div>
+
+  <!-- Vista: formulario nuevo jugador -->
+  <div id="jVistaForm" style="display:none">
+    <div class="form-head">
+      <button class="back" onclick="mostrarFormJug(false)">← Volver</button>
+      <strong>Nuevo jugador</strong>
+    </div>
+    <label class="t">Nombre(s) — puedes agregar varios, uno por línea</label>
+    <textarea id="jNombres" rows="5" placeholder="Juan Pérez&#10;Pedro Soto&#10;Diego"></textarea>
+    <button class="btn" onclick="nuevosJugadores()">Agregar</button>
+    <button class="btn sec" onclick="mostrarFormJug(false)">Cancelar</button>
+  </div>
+</section>
+
+<div id="msg"></div>
+
+<?!= include('js-comun') ?>
+<?!= include('js-partidos') ?>
+<?!= include('js-abonos') ?>
+<?!= include('js-saldos') ?>
+<?!= include('js-jugadores') ?>
+<?!= include('js-inicio') ?>
+</body>
+</html>

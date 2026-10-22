@@ -1,0 +1,13 @@
+<script>
+// ---------- Saldos ----------
+async function cargarSaldos(){
+  const [s, r] = await Promise.all([run('getSaldos'), run('getResumen')]);
+  $('tSaldos').innerHTML = s.map(x =>
+    `<tr><td>${esc(x.nombre)}</td><td class="n ${x.saldo<0?'neg':x.saldo>0?'pos':''}">${x.saldo<0?'-':''}${fmt(x.saldo)}</td></tr>`
+  ).join('');
+  $('resumen').value = r;
+}
+
+function whatsapp(){ window.open('https://wa.me/?text=' + encodeURIComponent($('resumen').value), '_blank'); }
+function copiar(){ const t=$('resumen'); t.select(); document.execCommand('copy'); msg('Copiado'); }
+</script>
