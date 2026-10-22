@@ -166,6 +166,31 @@ prueba('eliminar un jugador borra sus movimientos y lo quita de los partidos', (
   assert.deepStrictEqual({ ...g.setJugadoresPartido(id, ['Ana']) }, { agregados: 0, quitados: 0 });
 });
 
+prueba('agregar un jugador con teléfono chileno lo normaliza', () => {
+  const g = crearMock();
+  assert.strictEqual(g.agregarJugador('  Diego   Lagos ', '988976369').telefono, '+56 9 8897 6369');
+  assert.strictEqual(g.agregarJugador('Yerco', '+56 9 1234 5678').telefono, '+56 9 1234 5678');
+  assert.strictEqual(g.agregarJugador('Vitoco', '').telefono, '');
+  const p = Object.fromEntries(g.getPlantel().map(x => [x.nombre, x.telefono]));
+  assert.deepStrictEqual(p, { 'Diego Lagos': '+56 9 8897 6369', Vitoco: '', Yerco: '+56 9 1234 5678' });
+  assert.strictEqual(g.data.Jugadores[0][2], 'Telefono');   // crea el encabezado si faltaba
+});
+
+prueba('no permite jugadores repetidos ni teléfonos inválidos', () => {
+  const g = crearMock();
+  g.agregarJugador('Diego Lagos', '');
+  assert.throws(() => g.agregarJugador('diego lagos', ''), /ya está en el plantel/);
+  assert.throws(() => g.agregarJugador('Coke', '123'), /no parece válido/);
+  assert.throws(() => g.agregarJugador('  ', '988976369'), /nombre/);
+});
+
+prueba('cambiar y borrar el teléfono', () => {
+  const g = crearMock();
+  g.agregarJugador('Jp', '');
+  assert.strictEqual(g.setTelefono('Jp', '56912345678'), '+56 9 1234 5678');
+  assert.strictEqual(g.setTelefono('Jp', ''), '');
+});
+
 prueba('eliminar un jugador inexistente da error', () => {
   const g = crearMock();
   assert.throws(() => g.eliminarJugador('Nadie'), /no encontrado/);

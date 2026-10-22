@@ -8,7 +8,7 @@
  */
 
 const HOJAS = {
-  Jugadores:   ['Nombre', 'Activo'],
+  Jugadores:   ['Nombre', 'Activo', 'Telefono'],
   Partidos:    ['ID', 'Fecha', 'CostoPorJugador', 'Jugadores', 'Rival'],
   Movimientos: ['Timestamp', 'Fecha', 'Jugador', 'Tipo', 'Monto', 'PartidoID', 'Nota']
 };

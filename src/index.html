@@ -99,7 +99,7 @@
   <!-- ================= PLANTEL ================= -->
   <section id="jugadores">
     <div id="jVistaLista">
-      <button class="btn" onclick="mostrarFormJug(true)">Agregar jugadores</button>
+      <button class="btn" onclick="mostrarFormJug(true)">Nuevo jugador</button>
       <div class="seccion"><h2>Plantel</h2><span id="jResumen"></span></div>
       <div class="lista" id="jLista"></div>
     </div>
@@ -107,11 +107,14 @@
     <div id="jVistaForm" style="display:none">
       <button class="volver" onclick="mostrarFormJug(false)">‹ Plantel</button>
       <div class="panel">
-        <h2>Agregar jugadores</h2>
-        <label class="t" for="jNombres">Un nombre por línea</label>
-        <textarea id="jNombres" rows="6" placeholder="Juan Pérez&#10;Pedro Soto&#10;Diego Muñoz"></textarea>
+        <h2>Nuevo jugador</h2>
+        <label class="t" for="jNombre">Nombre</label>
+        <input id="jNombre" placeholder="Ej: Diego Lagos" autocomplete="off" autocapitalize="words">
+        <label class="t" for="jTelefono">Teléfono</label>
+        <input id="jTelefono" type="tel" inputmode="tel" placeholder="9 1234 5678" autocomplete="off">
+        <p class="detalle" style="margin:6px 2px 0">Opcional. Sirve para escribirle por WhatsApp desde su ficha.</p>
       </div>
-      <div style="margin-top:16px"><button class="btn" onclick="nuevosJugadores()">Agregar al plantel</button></div>
+      <div style="margin-top:16px"><button class="btn" onclick="nuevoJugador()">Agregar jugador</button></div>
     </div>
   </section>
 </main>

@@ -3,7 +3,7 @@
 function mostrarFormJug(ver){
   $('jVistaForm').style.display = ver ? 'block' : 'none';
   $('jVistaLista').style.display = ver ? 'none' : 'block';
-  if (ver) { $('jNombres').value = ''; $('jNombres').focus(); }
+  if (ver) { $('jNombre').value = ''; $('jTelefono').value = ''; $('jNombre').focus(); }
   else cargarPlantel();
   window.scrollTo(0, 0);
 }
@@ -25,6 +25,13 @@ async function cargarPlantel(){
       <div class="interruptor">
         <span>Activo<br><small class="detalle">Aparece al marcar partidos y abonos</small></span>
         <label class="sw"><input type="checkbox" aria-label="Activo" ${x.activo ? 'checked' : ''} onchange="toggleActivo(${i}, this.checked)"><span></span></label>
+      </div>
+      <div class="interruptor" style="border-top:1px solid var(--linea)">
+        <span>${x.telefono ? esc(x.telefono) : '<span class="detalle">Sin teléfono</span>'}</span>
+        <span style="display:flex;gap:4px">
+          ${x.telefono ? `<button class="link" onclick="escribirWsp(${i})">WhatsApp</button>` : ''}
+          <button class="link" onclick="editarTelefono(${i})">${x.telefono ? 'Cambiar' : 'Agregar'}</button>
+        </span>
       </div>
       <div id="jh${i}" class="detalle">Cargando movimientos…</div>
       <div style="display:flex;justify-content:space-between">
@@ -49,11 +56,33 @@ async function abrirJugador(i){
     : '<p style="margin:4px 0 8px">Sin movimientos todavía.</p>';
 }
 
-async function nuevosJugadores(){
-  const r = await run('agregarJugadores', $('jNombres').value);
-  msg(`${r.agregados} agregado(s)` + (r.repetidos.length ? ` · ya estaban: ${r.repetidos.join(', ')}` : ''));
+async function nuevoJugador(){
+  const nombre = $('jNombre').value.trim();
+  if (!nombre) { $('jNombre').focus(); return msg('Escribe el nombre del jugador'); }
+  const r = await run('agregarJugador', nombre, $('jTelefono').value);
+  msg(`${r.nombre} agregado al plantel`);
   await refrescarActivos();
   mostrarFormJug(false);
+}
+
+async function editarTelefono(i){
+  const j = window._plantel[i];
+  const t = prompt(`Teléfono de ${j.nombre} (vacío para borrarlo):`, j.telefono);
+  if (t === null || t.trim() === j.telefono) return;
+  await run('setTelefono', j.nombre, t);
+  msg(t.trim() ? 'Teléfono guardado' : 'Teléfono borrado');
+  await cargarPlantel();
+}
+
+/** Abre WhatsApp con el jugador; si debe, el mensaje ya trae el recordatorio. */
+function escribirWsp(i){
+  const j = window._plantel[i];
+  let d = j.telefono.replace(/\D/g, '');
+  if (d.length === 9 && d.startsWith('9')) d = '56' + d;
+  const texto = j.saldo < 0
+    ? `Hola ${j.nombre.split(' ')[0]}, te escribo por la pichanga de AndesFC: tienes ${fmt(j.saldo)} pendiente. ¡Gracias!`
+    : '';
+  window.open(`https://wa.me/${d}` + (texto ? '?text=' + encodeURIComponent(texto) : ''), '_blank');
 }
 
 async function toggleActivo(i, activo){

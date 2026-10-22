@@ -16,7 +16,8 @@ function getPlantel() {
     .filter(r => String(r[0]).trim())
     .map(r => {
       const nombre = String(r[0]).trim();
-      return { nombre, activo: esActivo_(r[1]), saldo: saldos[nombre] || 0, movimientos: movs[nombre] || 0 };
+      return { nombre, activo: esActivo_(r[1]), telefono: String(r[2] || '').trim(),
+               saldo: saldos[nombre] || 0, movimientos: movs[nombre] || 0 };
     })
     .sort((a, b) => (b.activo - a.activo) || a.nombre.localeCompare(b.nombre, 'es'));
 }
@@ -57,6 +58,55 @@ function eliminarJugador(nombre) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Normaliza un teléfono chileno: '988976369', '+56988976369' o '56 9 8897 6369' → '+56 9 8897 6369'.
+ * Otros formatos se guardan tal cual (solo dígitos y +). Vacío → ''.
+ */
+function normalizarTelefono_(t) {
+  const crudo = String(t || '').trim();
+  if (!crudo) return '';
+  let d = crudo.replace(/\D/g, '');
+  if (d.length === 11 && d.startsWith('569')) d = d.slice(2);
+  if (d.length === 9 && d.startsWith('9')) return `+56 9 ${d.slice(1, 5)} ${d.slice(5)}`;
+  if (d.length < 8 || d.length > 15) throw new Error('El teléfono no parece válido: ' + crudo);
+  return (crudo.startsWith('+') ? '+' : '') + d;
+}
+
+/** Asegura el encabezado de la columna Teléfono en hojas creadas antes de esta versión. */
+function asegurarColTelefono_() {
+  const s = hoja_('Jugadores');
+  if (!s.getRange(1, 3).getValue()) s.getRange(1, 3).setValue('Telefono').setFontWeight('bold');
+}
+
+/** Agrega un jugador con su teléfono (opcional). */
+function agregarJugador(nombre, telefono) {
+  nombre = String(nombre || '').trim().replace(/\s+/g, ' ');
+  if (!nombre) throw new Error('Escribe el nombre del jugador');
+  const tel = normalizarTelefono_(telefono);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    if (filas_('Jugadores').some(r => String(r[0]).trim().toLowerCase() === nombre.toLowerCase())) {
+      throw new Error(`${nombre} ya está en el plantel`);
+    }
+    asegurarColTelefono_();
+    hoja_('Jugadores').appendRow([nombre, true, tel]);
+    return { nombre, telefono: tel };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Cambia o borra (vacío) el teléfono de un jugador. */
+function setTelefono(nombre, telefono) {
+  const tel = normalizarTelefono_(telefono);
+  const i = filas_('Jugadores').findIndex(r => String(r[0]).trim() === nombre);
+  if (i < 0) throw new Error('Jugador no encontrado');
+  asegurarColTelefono_();
+  hoja_('Jugadores').getRange(i + 2, 3).setValue(tel);
+  return tel;
 }
 
 /** Agrega uno o varios jugadores (uno por línea o separados por coma). */
