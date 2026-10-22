@@ -83,7 +83,8 @@ function escribirWsp(i){
   const texto = j.saldo < 0
     ? `Hola ${j.nombre.split(' ')[0]}, te escribo por la pichanga de AndesFC: tienes ${fmt(j.saldo)} pendiente. ¡Gracias!`
     : '';
-  window.open(`https://wa.me/${d}` + (texto ? '?text=' + encodeURIComponent(texto) : ''), '_blank');
+  // Ojo: Apps Script corta las dobles barras dentro de comillas invertidas: las URL van en comillas simples.
+  window.open('https://wa.me/' + d + (texto ? '?text=' + encodeURIComponent(texto) : ''), '_blank');
 }
 
 async function toggleActivo(i, activo){

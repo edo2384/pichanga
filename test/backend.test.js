@@ -196,6 +196,31 @@ prueba('eliminar un jugador inexistente da error', () => {
   assert.throws(() => g.eliminarJugador('Nadie'), /no encontrado/);
 });
 
+prueba('el JavaScript del navegador no tiene // dentro de comillas invertidas (Apps Script lo corta)', () => {
+  const dir = path.join(__dirname, '..', 'src');
+  const malos = [];
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.html'))) {
+    const html = fs.readFileSync(path.join(dir, f), 'utf8');
+    for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+      for (const t of m[1].matchAll(/`[^`]*`/g)) {
+        if (t[0].includes('//')) malos.push(`${f}: ${t[0].slice(0, 60)}`);
+      }
+    }
+  }
+  assert.deepStrictEqual(malos, []);
+});
+
+prueba('el JavaScript del navegador es sintácticamente válido', () => {
+  const dir = path.join(__dirname, '..', 'src');
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.html'))) {
+    const html = fs.readFileSync(path.join(dir, f), 'utf8');
+    for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+      try { new vm.Script(m[1], { filename: f }); }
+      catch (e) { throw new Error(`${f}: ${e.message}`); }
+    }
+  }
+});
+
 let fallas = 0;
 for (const [nombre, fn] of pruebas) {
   try { fn(); console.log('  ✓ ' + nombre); }
