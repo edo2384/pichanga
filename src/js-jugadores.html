@@ -60,7 +60,7 @@ async function abrirJugador(i){
   $('jh' + i).innerHTML = ms.length
     ? '<table class="hist">' + ms.map(m => `
         <tr><td>${esc(m.fecha)}<br><small class="detalle">${m.tipo === 'ABONO' ? 'Abono' : 'Partido'}${m.nota ? ' ' + esc(m.nota) : ''}</small></td>
-            <td class="${m.tipo === 'ABONO' ? 'favor' : 'debe'}">${m.tipo === 'ABONO' ? '+' : '−'}${fmt(m.monto)}</td></tr>`).join('') + '</table>'
+            <td class="m ${m.tipo === 'ABONO' ? 'favor' : 'debe'}">${m.tipo === 'ABONO' ? '+' : '−'}${fmt(m.monto)}</td></tr>`).join('') + '</table>'
     : '<p style="margin:4px 0 8px">Sin movimientos todavía.</p>';
 }
 

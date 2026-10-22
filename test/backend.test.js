@@ -240,6 +240,43 @@ prueba('resumen de WhatsApp con 🔴 / ✅ y datos de pago al final', () => {
   assert.strictEqual(g.getDatosPago(), '');
 });
 
+prueba('borrar un abono corrige el saldo', () => {
+  const g = crearMock();
+  g.agregarJugadores('Ana');
+  g.registrarAbono('Ana', 5000, 'mal ingresado');
+  g.registrarAbono('Ana', 3000);
+  const m = g.getMovimientosJugador('Ana', 100).find(x => x.nota === 'mal ingresado');
+  assert.deepStrictEqual({ ...g.eliminarMovimiento(m.fila, m.firma) }, { tipo: 'ABONO', monto: 5000, jugador: 'Ana' });
+  assert.deepStrictEqual(saldos(g), { Ana: 3000 });
+});
+
+prueba('borrar el cobro de un partido quita al jugador de ese partido', () => {
+  const g = crearMock();
+  g.agregarJugadores('Ana\nBeto');
+  const id = g.registrarPartido('2026-10-25', 3000, [], 'Halcones');
+  g.setJugadoresPartido(id, ['Ana', 'Beto']);
+  const m = g.getMovimientosJugador('Beto', 100)[0];
+  assert.strictEqual(m.partidoId, id);
+  g.eliminarMovimiento(m.fila, m.firma);
+  assert.deepStrictEqual(saldos(g), { Ana: -3000, Beto: 0 });
+  assert.deepStrictEqual(Array.from(g.getPartidos()[0].jugadores), ['Ana']);
+});
+
+prueba('no borra si la fila cambió (firma distinta) o ya no existe', () => {
+  const g = crearMock();
+  g.agregarJugadores('Ana\nBeto');
+  g.registrarAbono('Ana', 1000);
+  g.registrarAbono('Beto', 2000);
+  const [ana] = g.getMovimientosJugador('Ana', 100);
+  const [beto] = g.getMovimientosJugador('Beto', 100);
+  g.eliminarMovimiento(ana.fila, ana.firma);                 // la fila de Beto se corre hacia arriba
+  assert.throws(() => g.eliminarMovimiento(beto.fila, beto.firma), /ya no existe|cambió/);
+  assert.deepStrictEqual(saldos(g), { Ana: 0, Beto: 2000 }); // Beto intacto
+  const [beto2] = g.getMovimientosJugador('Beto', 100);      // con la fila actualizada sí se borra
+  g.eliminarMovimiento(beto2.fila, beto2.firma);
+  assert.deepStrictEqual(saldos(g), { Ana: 0, Beto: 0 });
+});
+
 let fallas = 0;
 for (const [nombre, fn] of pruebas) {
   try { fn(); console.log('  ✓ ' + nombre); }

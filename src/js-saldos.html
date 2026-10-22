@@ -2,13 +2,16 @@
 // ---------- Saldos ----------
 const ICONO_DEBE  = '<span class="ico ico-debe" aria-hidden="true"></span>';
 const ICONO_FAVOR = '<span class="ico ico-favor" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 12.5l4 4L18 8"/></svg></span>';
-function filaSaldo(x){
+const PAPELERA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>';
+
+function filaSaldo(x, i){
   return `
-    <div class="fila">
+    <button class="fila" id="sg${i}" onclick="abrirSaldo(${i})" aria-expanded="false">
       <div class="avatar">${iniciales(x.nombre)}</div>
       <div class="cuerpo"><div class="titulo">${esc(x.nombre)}</div></div>
       <div class="valor num ${claseSaldo(x.saldo)}">${saldoTxt(x.saldo)}</div>
-    </div>`;
+    </button>
+    <div class="ficha" id="sf${i}"><div class="detalle" style="padding:12px 0">Cargando registros…</div></div>`;
 }
 
 async function cargarSaldos(){
@@ -25,12 +28,53 @@ async function cargarSaldos(){
   $('sFavor').textContent = fmt(suma(favor));
   $('sFavorN').textContent = favor.length ? `a favor de ${favor.length}` : 'sin saldos a favor';
 
+  // índice único por jugador para las fichas desplegables
+  const todos = [...deben, ...favor, ...alDia];
+  window._saldosLista = todos;
+  let k = 0;
   const bloque = (titulo, icono, l) => l.length
-    ? `<div class="seccion"><h2>${icono}${titulo}</h2><span>${l.length}</span></div><div class="lista">${l.map(filaSaldo).join('')}</div>` : '';
+    ? `<div class="seccion"><h2>${icono}${titulo}</h2><span>${l.length}</span></div><div class="lista">${l.map(x => filaSaldo(x, k++)).join('')}</div>`
+    : '';
   $('tSaldos').innerHTML = s.length
     ? bloque('Deben', ICONO_DEBE, deben) + bloque('A favor', ICONO_FAVOR, favor) + bloque('Al día', '', alDia)
     : '<div class="vacio" style="margin-top:12px"><b>Sin movimientos todavía</b>Registra un partido o un abono para ver los saldos.</div>';
   $('resumen').value = r;
+
+  // si había un jugador abierto (por ejemplo, después de borrar un registro), se vuelve a abrir
+  if (window._saldoAbierto) {
+    const i = todos.findIndex(x => x.nombre === window._saldoAbierto);
+    if (i >= 0) abrirSaldo(i, true);
+  }
+}
+
+// ---------- detalle de un jugador: todos sus registros, con opción de borrar ----------
+async function abrirSaldo(i, forzar){
+  const f = $('sf' + i), b = $('sg' + i), j = window._saldosLista[i];
+  const abierta = forzar ? true : f.classList.toggle('abierta');
+  if (forzar) f.classList.add('abierta');
+  b.setAttribute('aria-expanded', abierta);
+  window._saldoAbierto = abierta ? j.nombre : null;
+  if (!abierta) return;
+  const ms = await run('getMovimientosJugador', j.nombre, 500);
+  window._movs = ms;
+  f.innerHTML = ms.length
+    ? '<table class="hist">' + ms.map((m, n) => `
+        <tr><td>${esc(m.fecha)}<br><small class="detalle">${m.tipo === 'ABONO' ? 'Abono' : 'Partido'}${m.nota ? ' ' + esc(m.nota) : ''}</small></td>
+            <td class="m ${m.tipo === 'ABONO' ? 'favor' : 'debe'}">${m.tipo === 'ABONO' ? '+' : '−'}${fmt(m.monto)}</td>
+            <td class="borrar"><button class="papelera" onclick="borrarMovimiento(${n})" aria-label="Borrar este registro">${PAPELERA}</button></td></tr>`).join('') + '</table>'
+    : '<p class="detalle" style="padding:12px 0;margin:0">Sin registros.</p>';
+}
+
+async function borrarMovimiento(n){
+  const m = window._movs[n], j = window._saldoAbierto;
+  const texto = m.tipo === 'ABONO'
+    ? `¿Borrar el abono de ${fmt(m.monto)} del ${m.fecha} de ${j}?`
+    : `¿Quitar a ${j} del partido ${m.nota || ''} del ${m.fecha}?\nSe borra el cobro de ${fmt(m.monto)} y deja de figurar en la lista de ese partido.`;
+  if (!confirm(texto)) return;
+  await run('eliminarMovimiento', m.fila, m.firma);
+  msg(m.tipo === 'ABONO' ? 'Abono borrado' : 'Cobro del partido borrado');
+  window._partidos = null;                                 // la lista de partidos cambió
+  await cargarSaldos();
 }
 
 function pintarDatosPago(pago){

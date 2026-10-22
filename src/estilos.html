@@ -119,8 +119,12 @@
   .sw input:focus-visible+span{outline:3px solid #6FA8DC;outline-offset:2px}
   .hist{width:100%;border-collapse:collapse;font-size:14px;margin:4px 0 8px}
   .hist td{padding:8px 0;border-bottom:1px solid var(--linea)}
-  .hist td:last-child{text-align:right;white-space:nowrap;font:700 17px var(--display)}
+  .hist td.m{text-align:right;white-space:nowrap;font:700 17px var(--display)}
   .hist tr:last-child td{border-bottom:0}
+  .hist td.borrar{width:44px;text-align:right;padding-left:6px}
+  .papelera{width:36px;height:36px;border:0;border-radius:10px;background:none;color:#9AA5B1;display:inline-grid;place-items:center}
+  .papelera svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .papelera:hover,.papelera:active{background:var(--debe-bg);color:var(--debe)}
 
   /* ---------- detalle del partido ---------- */
   .marcador{background:var(--papel);border-radius:16px;padding:16px;display:flex;gap:14px;align-items:center}
